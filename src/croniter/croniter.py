@@ -317,6 +317,10 @@ class croniter(object):
                     next = True
                     break
             if next:
+                # must advance some informations
+                # in order to have for example right
+                # number of days in motn
+                day, month, year = dst.day, dst.month, dst.year
                 continue
             return mktime(dst.timetuple())
 

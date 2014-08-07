@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from croniter import croniter
 
@@ -391,6 +391,57 @@ class CroniterTest(base.TestCase):
         itr2 = croniter('* * * * *', tokyo.localize(base))
         n2 = itr2.get_next(datetime)
         self.assertEqual(n2.tzinfo.zone, 'Asia/Tokyo')
+
+    def testLastDayOfEveryMonthNormalYear(self):
+        base = datetime(2013, 1, 4, 12, 15)
+        itr = croniter('1 2 l * *', base)
+        for i in xrange(0, len(croniter.DAYS)):
+            n = itr.get_next(datetime)
+            self.assertEqual(n.day, croniter.DAYS[i])
+        #endfor
+    #enddef
+
+    def testLastDayOfEveryMonthLeapYear(self):
+        base = datetime(2000, 1, 4, 12, 15)
+        days = list(croniter.DAYS)
+        days[1] = 29
+        days = tuple(days)
+        itr = croniter('1 2 l * *', base)
+        for i in xrange(0, len(days)):
+            n = itr.get_next(datetime)
+            self.assertEqual(n.day, days[i])
+        #endfor
+    #enddef
+
+    def testLastDayEveryThreeMonthsHugeTest(self):
+        def check(d):
+            i = d.month
+            ii = (i % 3)
+            if ii == 0:
+                ii = 3
+            day = d.day if d.day < 29 else "l"
+            fmt = "0 8 %s %s-12/3 *" % (day, ii)
+            print fmt
+            c = croniter(fmt, d)
+            n = c.next(datetime)
+            if day == "l" and n.year == d.year and n.month == d.month:
+                # same moth -> one more advance
+                n = c.next(datetime)
+            daysbetween = (n - d).days
+            self.assertGreater(daysbetween, 3 * 28)
+            self.assertLess(daysbetween, 100)
+        #enddef
+        yearsToCheck = 8
+        d = datetime(1994, 5, 30, 20, 8)
+        delta = timedelta(days=1)
+        for i in xrange(0, 366 * yearsToCheck):
+            check(d)
+            d += delta
+        #endfor
+    #enddef
+#endfor
+
+#endclass
 
 
 if __name__ == '__main__':
